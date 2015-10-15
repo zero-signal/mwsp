@@ -119,7 +119,6 @@ int mwsp_send_request(int fd, int length, int code)
 /* read and parse the response from a request for data */
 int mwsp_read_response(int fd, mwsp_header *header, char *data, int len)
 {
-    uint8_t rlen;
     ssize_t rrtn;
 
     char *pbuf;
@@ -142,9 +141,8 @@ int mwsp_read_response(int fd, mwsp_header *header, char *data, int len)
     }
 
     /* check the length */
-    rlen = (uint8_t) *pbuf++;
-    if(rlen == len) {
-        header->length = rlen;
+    if((uint8_t) *pbuf == len) {
+        header->length = (uint8_t) *pbuf++;
     } else {
         return -2;
     }
@@ -186,6 +184,7 @@ int mwsp_req_ident(int fd, mwsp_ident *ident)
         /* give the flight controller time to respond */
         sleep(1);
 
+        /* read and parse the response */
         rrtn = mwsp_read_response(fd, &(ident->header), ident->data.data, (int) sizeof(ident->data.data));
 
         if(rrtn >= 0){
@@ -198,8 +197,6 @@ int mwsp_req_ident(int fd, mwsp_ident *ident)
             printf("Type is: %i\n", ident->data.members.type);
             printf("MWSP version is: %i\n", ident->data.members.mwsp_ver);
             printf("Capability is: %i\n", ident->data.members.capability);
-
-            
 
             /* calculate the chksum */
 
