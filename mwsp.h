@@ -23,8 +23,9 @@
 #define MWSP_H_
 
 #include <stdint.h>
+#include "mwsp_types.h"
 
-#define MWSP_REQ_LENGTH             6
+#define MWSP_HEADER_LEN             6
 
 /* 
  * MWSP Messages 
@@ -91,39 +92,18 @@
 #define MWSP_DEBUG                  254
 
 /*
- * Data structures
- *
- */
-
-typedef struct mwsp_header {
-    uint8_t  length;
-    uint8_t  command;
-    uint8_t  chksum;
-
-} mwsp_header;
-
-typedef struct mwsp_ident {
-    mwsp_header header;
-
-    union {
-        char data[7];
-
-        struct {
-            uint8_t  version;
-            uint8_t  type;
-            uint8_t  mwsp_ver;
-            uint32_t capability;
-        } members;
-    } data;
-} mwsp_ident;
-
-/*
  * Function prototypes
  *
  */
 
 int mwsp_connect(char *port);
 int mwsp_disconnect(int fd);
-int mwsp_send_request(int fd, int length, int code);
+
+int compute_checksum(int len, int code, char *data);
+
+int mwsp_req_ident(int fd, mwsp_ident *ident);
+int mwsp_req_raw_imu(int fd, mwsp_raw_imu *raw_imu);
+int mwsp_req_raw_gps(int fd, mwsp_raw_gps *raw_gps);
+int mwsp_req_comp_gps(int fd, mwsp_comp_gps *comp_gps);
 
 #endif /* MWSP_H_ */

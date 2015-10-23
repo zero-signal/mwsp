@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
+#include <time.h>
 
 #include <stdlib.h>
 
@@ -35,6 +36,9 @@
 
 #define BAUDRATE    B115200
 #define SERIALPORT  "/dev/ttyUSB0"
+
+#define SLEEP_SECS  (time_t) 0
+#define SLEEP_NSECS (long)   5000000L  /* 1/200s */
 
 #define _POSIX_SOURCE 1
 
@@ -51,6 +55,9 @@ struct mwsp_request {
     mwsp_header header;
 };
 
+/* serial port data structure */
+struct termios newtios;
+
 /***********************
  ** Utility functions **
  ***********************/
@@ -59,7 +66,6 @@ struct mwsp_request {
 int mwsp_connect(char *port)
 {
     int fd;
-    struct termios newtios;
 
     /* open serial port */
     fd = open(port, O_RDWR | O_NOCTTY );
@@ -69,6 +75,7 @@ int mwsp_connect(char *port)
 
     memset(&newtios, 0, sizeof(newtios));
 
+    /* configure serial port */
     newtios.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
     newtios.c_iflag = IGNPAR;
     newtios.c_oflag = 0;
@@ -88,26 +95,15 @@ int mwsp_disconnect(int fd)
     } else {
         return 0;
     }
-
 }
 
-/* construct and send a request for data */
-int mwsp_send_request(int fd, int length, int code)
+/* write generic data to the serial port */
+int mwsp_write(int fd, void* data, int len)
 {
     int wrtn;
 
-    struct mwsp_request req;
-    memset(&req, 0, sizeof(req));
-
-    strncpy(req.preamble, MWSP_HEADER, sizeof(req.preamble));
-
-    req.direction = MWSP_FC_IN;
-    req.header.length  = length;
-    req.header.command = code;
-    req.header.chksum  = code;  /* TODO: do a real chksum calculation function here! */
-
     tcflush(fd, TCIOFLUSH);
-    wrtn = write(fd, &req, sizeof(req));
+    wrtn = write(fd, data, len);
 
     if(wrtn < 0){
         return -1;
@@ -116,35 +112,83 @@ int mwsp_send_request(int fd, int length, int code)
     }
 }
 
-/* read and parse the response from a request for data */
-int mwsp_read_response(int fd, mwsp_header *header, char *data, int len)
+/* read generic data from the serial port */
+int mwsp_read(int fd, char *buffer, int len)
 {
-    ssize_t rrtn;
+    int rrtn;
 
-    char *pbuf;
-    char buffer[512];
+    memset(buffer, 0, len);
 
-    memset(buffer, 0, (sizeof(char) * sizeof(buffer)));
+    /* configure serial port to read the right amount of data */
+    newtios.c_cc[VMIN]  = len;
+    newtios.c_cc[VTIME] = 1;
+
+    /* apply the settings */
+    tcsetattr(fd,TCSANOW,&newtios);
+
+    /* read data */
+    rrtn = read(fd, buffer, len);
+    tcflush(fd, TCIOFLUSH);
+
+    if(rrtn < 0){
+        return -1;
+    } else {
+        return rrtn;
+    }
+}
+
+int mwsp_get_data(int fd, mwsp_header *header, int code, char *data, int len)
+{
+    /* TODO: Fix return values!!! */
+
+    ssize_t wrtn, rrtn;
+    char *buffer, *pbuf;
+
+    buffer = malloc(sizeof(char) * (len + MWSP_HEADER_LEN));
     pbuf = buffer;
 
-    /* read the data in and check the protocol header */
-    rrtn = read(fd, buffer, (sizeof(char) * sizeof(buffer)));
+    /* construct a request */
+    struct mwsp_request req;
+    memset(&req, 0, sizeof(req));
 
-    if(strncmp(buffer, MWSP_HEADER, 2) != 0) {
+    /* populate the preamble */
+    strncpy(req.preamble, MWSP_HEADER, sizeof(req.preamble));
+    req.direction = MWSP_FC_IN;
+
+    req.header.length  = 0;
+    req.header.command = code;
+
+    /* calculate the checksum */
+    req.header.chksum  = code;  /* TODO: do a real chksum calculation function here! */
+
+    /* send the correct request */
+    wrtn = mwsp_write(fd, &req, sizeof(req));
+    if(wrtn != MWSP_HEADER_LEN){
         return -1;
+    }
+
+    /* read the repsonse */
+    rrtn = mwsp_read(fd, buffer, (len + MWSP_HEADER_LEN));
+    if(rrtn < 0){
+        return -2;
+    }
+
+    /* check preamble */
+    if(strncmp(buffer, MWSP_HEADER, 2) != 0) {
+        return -3;
     }
     pbuf += (int) (sizeof(char) * (sizeof(MWSP_HEADER) - 1));
 
     /* check direction is correct, i.e '>' */
     if(*pbuf++ != MWSP_FC_OUT) {
-        return -2;
+        return -4;
     }
 
     /* check the length */
     if((uint8_t) *pbuf == len) {
         header->length = (uint8_t) *pbuf++;
     } else {
-        return -2;
+        return -5;
     }
 
     /* check the code */
@@ -153,15 +197,40 @@ int mwsp_read_response(int fd, mwsp_header *header, char *data, int len)
     /* if the size if correct, copy the data in the receiving structure */
     if(header->length > 0 && (header->length == len)){
         memcpy(data, pbuf, header->length);
-        pbuf += (header->length - 1);
+        pbuf += (header->length);
     } else {
-        return -3;
+        return -6;
     }
 
-    /* check the checksum */
-    header->chksum = (uint8_t) *pbuf;
+    /* ensure the checksum received is correct */
+    if ((uint8_t) *pbuf == compute_checksum(header->length, header->command, data)){
+        header->chksum = (uint8_t) *pbuf;
+    } else {
+        return -7;
+    }
 
-    return rrtn;
+    free(buffer);
+
+    return 0;
+}
+
+/* computes the checksum for a given request/response */
+int compute_checksum(int len, int code, char *data)
+{
+    if((len < 0) || (code < 0)){
+        return -1;
+    } 
+    
+    int sum = len ^ code;
+
+    if (len > 0){
+        int i;
+        for (i = 0; i < len; i++){
+            sum ^= (uint8_t) *data++;
+        }
+    }
+
+    return sum;
 }
 
 /***********************
@@ -170,54 +239,42 @@ int mwsp_read_response(int fd, mwsp_header *header, char *data, int len)
 
 int mwsp_req_ident(int fd, mwsp_ident *ident)
 {
-    ssize_t wrtn, rrtn;
+    return mwsp_get_data(fd, &(ident->header), MWSP_IDENT, ident->data.data, (int) sizeof(ident->data.data));
 
-    if(ident != NULL){
+    /*
+      printf("Length of data received is: %i,%x\n", ident->header.length, ident->header.length);
+      printf("Command received is: %i,%x\n", ident->header.command, ident->header.command);
+      printf("Checksum received is: %i,%x\n", ident->header.chksum, ident->header.chksum);
 
-        /* send the correct request */
-        wrtn = mwsp_send_request(fd, 0, MWSP_IDENT);
+      printf("Version is: %i,%x\n", ident->data.members.version, ident->data.members.version);
+      printf("Type is: %i, %x\n", ident->data.members.type, ident->data.members.type);
+      printf("MWSP version is: %i,%x\n", ident->data.members.mwsp_ver, ident->data.members.mwsp_ver);
+      printf("Capability is: %i,%x\n", ident->data.members.capability, ident->data.members.capability);
 
-        if(wrtn != MWSP_REQ_LENGTH){
-            return -1;
-        }
+      return rtn;
+      */
+}
 
-        /* give the flight controller time to respond */
-        sleep(1);
+int mwsp_req_status(int fd, mwsp_status *status)
+{
+    return mwsp_get_data(fd, &(status->header), MWSP_STATUS, status->data.data, (int) sizeof(status->data.data));
+}
 
-        /* read and parse the response */
-        rrtn = mwsp_read_response(fd, &(ident->header), ident->data.data, (int) sizeof(ident->data.data));
+int mwsp_req_raw_imu(int fd, mwsp_raw_imu *raw_imu)
+{
+    return mwsp_get_data(fd, &(raw_imu->header), MWSP_RAW_IMU, raw_imu->data.data, (int) sizeof(raw_imu->data.data));
+}
 
-        if(rrtn >= 0){
-            /* check the header */
-            printf("Length of data received is: %i\n", ident->header.length);
-            printf("Command received is: %i\n", ident->header.command);
-            printf("Checksum received is: %i\n", ident->header.chksum);
+int mwsp_req_raw_gps(int fd, mwsp_raw_gps *raw_gps)
+{
+    return mwsp_get_data(fd, &(raw_gps->header), MWSP_RAW_GPS, raw_gps->data.data, (int) sizeof(raw_gps->data.data));
+}
 
-            printf("Version is: %i\n", ident->data.members.version);
-            printf("Type is: %i\n", ident->data.members.type);
-            printf("MWSP version is: %i\n", ident->data.members.mwsp_ver);
-            printf("Capability is: %i\n", ident->data.members.capability);
-
-            /* calculate the chksum */
-
-        } else {
-            return -2;
-        }
-    } else {
-        return -3;
-    }
-    return rrtn;
+int mwsp_req_comp_gps(int fd, mwsp_comp_gps *comp_gps)
+{
+    return mwsp_get_data(fd, &(comp_gps->header), MWSP_COMP_GPS, comp_gps->data.data, (int) sizeof(comp_gps->data.data));
 }
 
 /*******************
  ** Set functions **
  *******************/
-
-
-
-/***********************
- ** Support functions **
- ***********************/
-int check_res_header(void){
-
-}
