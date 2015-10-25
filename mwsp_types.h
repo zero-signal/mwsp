@@ -45,8 +45,8 @@ typedef struct mwsp_ident {
         char data[7];
 
         struct {
-            uint8_t  version, type, mwsp_ver;
-            uint32_t capability;
+            uint8_t  ver, type, mwsp_ver;
+            uint32_t cap;
         } members;
     } data;
 } mwsp_ident;
@@ -59,9 +59,9 @@ typedef struct mwsp_status {
         char data[11];
 
         struct {
-            uint16_t cycle_time, i2c_errors, sensors;
+            uint16_t cyc_time, i2c_err, sens;
             uint32_t flag;
-            uint8_t  conf_current;
+            uint8_t  conf_cur;
         } members;
     } data;
 } mwsp_status;
@@ -81,6 +81,48 @@ typedef struct mwsp_raw_imu {
     } data;
 } mwsp_raw_imu;
 
+/* 103: MWSP_SERVO */
+typedef struct mwsp_servo {
+    mwsp_header header;
+
+    union {
+        char data[16];
+
+        struct {
+            uint16_t servo1, servo2, servo3, servo4;
+            uint16_t servo5, servo6, servo7, servo8;
+        } members;
+    } data;
+} mwsp_servo;
+
+/* 104: MWSP_MOTOR */
+typedef struct mwsp_motor {
+    mwsp_header header;
+
+    union {
+        char data[16];
+
+        struct {
+            uint16_t motor1, motor2, motor3, motor4;
+            uint16_t motor5, motor6, motor7, motor8;
+        } members;
+    } data;
+} mwsp_motor;
+
+/* 105: MWSP_RC */
+typedef struct mwsp_rc {
+    mwsp_header header;
+
+    union {
+        char data[16];
+
+        struct {
+            uint16_t roll, pitch, yaw, thro;
+            uint16_t aux1, aux2, aux3, aux4;
+        } members;
+    } data;
+} mwsp_rc;
+
 /* 106: MWSP_RAW_GPS */
 typedef struct mwsp_raw_gps {
     mwsp_header header;
@@ -90,8 +132,8 @@ typedef struct mwsp_raw_gps {
 
         struct {
             uint8_t  fix, num_sats;
-            uint32_t latitude, longitude;
-            uint16_t altitude, velocity, course;
+            uint32_t lat, lon;
+            uint16_t alt, vel, course;
         } members;
     } data;
 } mwsp_raw_gps;
@@ -105,9 +147,137 @@ typedef struct mwsp_comp_gps {
 
         struct {
             uint16_t dist_home, dir_home;
-            uint8_t  update;
+            uint8_t  upd;
         } members;
     } data;
 } mwsp_comp_gps;
+
+/* 108: MWSP_ATTITUDE */
+typedef struct mwsp_attitude {
+    mwsp_header header;
+
+    union {
+        char data[6];
+
+        struct {
+            int16_t angx, angy, head;
+        } members;
+    } data;
+} mwsp_attitude;
+
+/* 109: MWSP_ALTITUDE */
+typedef struct mwsp_altitude {
+    mwsp_header header;
+
+    union {
+        char data[6];
+
+        struct {
+            int32_t cm;
+            int16_t cm_s;
+        } members;
+    } data;
+} mwsp_altitude;
+
+/* 110: MWSP_ANALOG */
+typedef struct mwsp_analog {
+    mwsp_header header;
+
+    union {
+        char data[7];
+
+        struct {
+            uint8_t vbat;
+            uint16_t pwr, rssi, amps;
+        } members;
+    } data;
+} mwsp_analog;
+
+/* 111: MWSP_RC_TUNING */
+typedef struct mwsp_rc_tuning {
+    mwsp_header header;
+
+    union {
+        char data[7];
+
+        struct {
+            uint8_t rc_rate, rc_expo;
+            uint8_t rp_rate, y_rate;
+            uint8_t dyn_thr_pid;
+            uint8_t thr_mid, thr_expo;
+        } members;
+    } data;
+} mwsp_rc_tuning;
+
+/* 112: MWSP_PID */
+typedef struct mwsp_pid {
+    mwsp_header header;
+
+    union {
+        char data[30];
+
+        struct {
+            uint8_t roll_p, roll_i, roll_d;
+            uint8_t pitch_p, pitch_i, pitch_d;
+            uint8_t yaw_p, yaw_i, yaw_d;
+            uint8_t alt_p, alt_i, alt_d;
+            uint8_t pos_p, pos_i, pos_d;
+            uint8_t posr_p, posr_i, posr_d;
+            uint8_t navr_p, navr_i, navr_d;
+            uint8_t lvl_p, lvl_i, lvl_d;
+            uint8_t mag_p, mag_i, mag_d;
+            uint8_t val_p, vel_i, vel_d;
+        } members;
+    } data;
+} mwsp_pid;
+
+/* 114: MWSP_MISC */
+typedef struct mwsp_misc {
+    mwsp_header header;
+
+    union {
+        char data[22];
+
+        struct {
+            uint16_t pwr_trig, min_thr;
+            uint16_t max_thr, min_com, fs_thr;
+            uint16_t plog_arm;
+            uint32_t plog_life;
+            uint16_t mag_dec;
+            uint8_t vb_scale, vb_warn1, vbwarn2, vb_crit;
+        } members;
+    } data;
+} mwsp_misc;
+
+/* 115: MWSP_MOTOR_PINS */
+typedef struct mwsp_motor_pins {
+    mwsp_header header;
+
+    union {
+        char data[8];
+
+        struct {
+            uint8_t mtr1, mtr2, mtr3, mtr4;
+            uint8_t mtr5, mtr6, mtr7, mtr8;
+        } members;
+    } data;
+} mwsp_motor_pins;
+
+/* 118: MWSP_WP */
+typedef struct mwsp_wp {
+    mwsp_header header;
+
+    union {
+        char data[18];
+
+        struct {
+            uint8_t wp_no;
+            uint32_t lat, lon, alt_hld;
+            uint16_t head, tm_stay;
+            uint8_t nav_flag;
+        } members;
+    } data;
+} mwsp_wp;
+
 
 #endif /* MWSP_TYPES_H_ */

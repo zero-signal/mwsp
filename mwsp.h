@@ -102,8 +102,21 @@ int mwsp_disconnect(int fd);
 int compute_checksum(int len, int code, char *data);
 
 int mwsp_req_ident(int fd, mwsp_ident *ident);
+int mwsp_req_status(int fd, mwsp_status *status);
 int mwsp_req_raw_imu(int fd, mwsp_raw_imu *raw_imu);
+int mwsp_req_servo(int fd, mwsp_servo *servo);
+int mwsp_req_motor(int fd, mwsp_motor *motor);
+int mwsp_req_rc(int fd, mwsp_rc *rc);
 int mwsp_req_raw_gps(int fd, mwsp_raw_gps *raw_gps);
 int mwsp_req_comp_gps(int fd, mwsp_comp_gps *comp_gps);
+int mwsp_req_attitude(int fd, mwsp_attitude *attitude);
+int mwsp_req_altitude(int fd, mwsp_altitude *altitude);
+int mwsp_req_analog(int fd, mwsp_analog *analog);
+int mwsp_req_rc_tuning(int fd, mwsp_rc_tuning *rc_tuning);
+int mwsp_req_pid(int fd, mwsp_pid *pid);
+int mwsp_req_misc(int fd, mwsp_misc *misc);
+int mwsp_req_motor_pins(int fd, mwsp_motor_pins *pins);
+int mwsp_req_wp(int fd, mwsp_wp *wp);
+int mwsp_req_wp(int fd, mwsp_wp *wp);
 
 #endif /* MWSP_H_ */
