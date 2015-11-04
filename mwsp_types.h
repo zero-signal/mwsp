@@ -31,6 +31,9 @@
 
 /* request/response header */
 typedef struct mwsp_header {
+    char preamble[2];
+    char direction;
+
     uint8_t  length;
     uint8_t  command;
     uint8_t  chksum;
@@ -39,8 +42,6 @@ typedef struct mwsp_header {
 
 /* 100: MWSP_IDENT */
 typedef struct mwsp_ident {
-    mwsp_header header;
-
     union {
         char data[7];
 
@@ -53,8 +54,6 @@ typedef struct mwsp_ident {
 
 /* 101: MWSP_STATUS */
 typedef struct mwsp_status {
-    mwsp_header header;
-
     union {
         char data[11];
 
@@ -68,8 +67,6 @@ typedef struct mwsp_status {
 
 /* 102: MWSP_RAW_IMU */
 typedef struct mwsp_raw_imu {
-    mwsp_header header;
-
     union {
         char data[18];
 
@@ -83,8 +80,6 @@ typedef struct mwsp_raw_imu {
 
 /* 103: MWSP_SERVO */
 typedef struct mwsp_servo {
-    mwsp_header header;
-
     union {
         char data[16];
 
@@ -97,8 +92,6 @@ typedef struct mwsp_servo {
 
 /* 104: MWSP_MOTOR */
 typedef struct mwsp_motor {
-    mwsp_header header;
-
     union {
         char data[16];
 
@@ -111,8 +104,6 @@ typedef struct mwsp_motor {
 
 /* 105: MWSP_RC */
 typedef struct mwsp_rc {
-    mwsp_header header;
-
     union {
         char data[16];
 
@@ -125,8 +116,6 @@ typedef struct mwsp_rc {
 
 /* 106: MWSP_RAW_GPS */
 typedef struct mwsp_raw_gps {
-    mwsp_header header;
-
     union {
         char data[16];
 
@@ -140,8 +129,6 @@ typedef struct mwsp_raw_gps {
 
 /* 107: MWSP_COMP_GPS */
 typedef struct mwsp_comp_gps {
-    mwsp_header header;
-
     union {
         char data[5];
 
@@ -154,8 +141,6 @@ typedef struct mwsp_comp_gps {
 
 /* 108: MWSP_ATTITUDE */
 typedef struct mwsp_attitude {
-    mwsp_header header;
-
     union {
         char data[6];
 
@@ -167,8 +152,6 @@ typedef struct mwsp_attitude {
 
 /* 109: MWSP_ALTITUDE */
 typedef struct mwsp_altitude {
-    mwsp_header header;
-
     union {
         char data[6];
 
@@ -181,8 +164,6 @@ typedef struct mwsp_altitude {
 
 /* 110: MWSP_ANALOG */
 typedef struct mwsp_analog {
-    mwsp_header header;
-
     union {
         char data[7];
 
@@ -195,8 +176,6 @@ typedef struct mwsp_analog {
 
 /* 111: MWSP_RC_TUNING */
 typedef struct mwsp_rc_tuning {
-    mwsp_header header;
-
     union {
         char data[7];
 
@@ -211,8 +190,6 @@ typedef struct mwsp_rc_tuning {
 
 /* 112: MWSP_PID */
 typedef struct mwsp_pid {
-    mwsp_header header;
-
     union {
         char data[30];
 
@@ -233,8 +210,6 @@ typedef struct mwsp_pid {
 
 /* 114: MWSP_MISC */
 typedef struct mwsp_misc {
-    mwsp_header header;
-
     union {
         char data[22];
 
@@ -251,8 +226,6 @@ typedef struct mwsp_misc {
 
 /* 115: MWSP_MOTOR_PINS */
 typedef struct mwsp_motor_pins {
-    mwsp_header header;
-
     union {
         char data[8];
 
@@ -265,8 +238,6 @@ typedef struct mwsp_motor_pins {
 
 /* 118: MWSP_WP */
 typedef struct mwsp_wp {
-    mwsp_header header;
-
     union {
         char data[18];
 
@@ -278,6 +249,28 @@ typedef struct mwsp_wp {
         } members;
     } data;
 } mwsp_wp;
+
+/* 210: MWSP_SELECT_SETTING */
+typedef struct mwsp_setting {
+    union {
+        char data[1];
+
+        struct {
+            uint8_t setting;
+        } members;
+    } data;
+} mwsp_setting;
+
+/* 211: MWSP_SET_HEAD */
+typedef struct mwsp_heading {
+    union {
+        char data[2];
+
+        struct {
+            int16_t heading;
+        } members;
+    } data;
+} mwsp_heading;
 
 
 #endif /* MWSP_TYPES_H_ */

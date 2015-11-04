@@ -22,10 +22,7 @@
 #ifndef MWSP_H_
 #define MWSP_H_
 
-#include <stdint.h>
 #include "mwsp_types.h"
-
-#define MWSP_HEADER_LEN             6
 
 /* 
  * MWSP Messages 
@@ -96,27 +93,36 @@
  *
  */
 
-int mwsp_connect(char *port);
-int mwsp_disconnect(int fd);
+int mwsp_get_ident(int fd, mwsp_ident *ident);
+int mwsp_get_status(int fd, mwsp_status *status);
+int mwsp_get_raw_imu(int fd, mwsp_raw_imu *raw_imu);
+int mwsp_get_servo(int fd, mwsp_servo *servo);
+int mwsp_get_motor(int fd, mwsp_motor *motor);
+int mwsp_get_rc(int fd, mwsp_rc *rc);
+int mwsp_get_raw_gps(int fd, mwsp_raw_gps *raw_gps);
+int mwsp_get_comp_gps(int fd, mwsp_comp_gps *comp_gps);
+int mwsp_get_attitude(int fd, mwsp_attitude *attitude);
+int mwsp_get_altitude(int fd, mwsp_altitude *altitude);
+int mwsp_get_analog(int fd, mwsp_analog *analog);
+int mwsp_get_rc_tuning(int fd, mwsp_rc_tuning *rc_tuning);
+int mwsp_get_pid(int fd, mwsp_pid *pid);
+int mwsp_get_misc(int fd, mwsp_misc *misc);
+int mwsp_get_motor_pins(int fd, mwsp_motor_pins *pins);
+int mwsp_get_wp(int fd, mwsp_wp *wp);
 
-int compute_checksum(int len, int code, char *data);
+int mwsp_set_raw_rc(int fd, mwsp_rc *rc);
+int mwsp_set_raw_gps(int fd, mwsp_raw_gps *gps);
+int mwsp_set_head(int fd, mwsp_heading *heading);
+int mwsp_set_setting(int fd, mwsp_setting *setting);
+int mwsp_set_motor(int fd, mwsp_motor *motor);
 
-int mwsp_req_ident(int fd, mwsp_ident *ident);
-int mwsp_req_status(int fd, mwsp_status *status);
-int mwsp_req_raw_imu(int fd, mwsp_raw_imu *raw_imu);
-int mwsp_req_servo(int fd, mwsp_servo *servo);
-int mwsp_req_motor(int fd, mwsp_motor *motor);
-int mwsp_req_rc(int fd, mwsp_rc *rc);
-int mwsp_req_raw_gps(int fd, mwsp_raw_gps *raw_gps);
-int mwsp_req_comp_gps(int fd, mwsp_comp_gps *comp_gps);
-int mwsp_req_attitude(int fd, mwsp_attitude *attitude);
-int mwsp_req_altitude(int fd, mwsp_altitude *altitude);
-int mwsp_req_analog(int fd, mwsp_analog *analog);
-int mwsp_req_rc_tuning(int fd, mwsp_rc_tuning *rc_tuning);
-int mwsp_req_pid(int fd, mwsp_pid *pid);
-int mwsp_req_misc(int fd, mwsp_misc *misc);
-int mwsp_req_motor_pins(int fd, mwsp_motor_pins *pins);
-int mwsp_req_wp(int fd, mwsp_wp *wp);
-int mwsp_req_wp(int fd, mwsp_wp *wp);
+int mwsp_acc_calibration(int fd);
+int mwsp_mag_calibration(int fd);
+int mwsp_reset_conf(int fd);
+int mwsp_bind(int fd);
+int mwsp_eeprom_write(int fd);
+
+int arm(int fd);
+int disarm(int fd);
 
 #endif /* MWSP_H_ */
